@@ -104,7 +104,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void createContract(RoomRegisterDto user,Integer roomId) {
         User u = new User();
-        if(user.getId() == 0){
+        if(user.getId() == null){
             u.setUsername(user.getIdentity());
             u.setPassword(passwordEncoder.encode(user.getIdentity()));
             u.setRole("ROLE_USER");
@@ -119,17 +119,18 @@ public class UserServiceImpl implements UserService {
 
         Map<String, Object> rFirebase = new HashMap<>();
         try {
-            rFirebase.put("username",r.getIdentity());
+            rFirebase.put("username",u.getUsername());
             rFirebase.put("name",r.getFullName());
             rFirebase.put("avatar",r.getAvatar());
-            this.firebaseService.addUser(rFirebase);
+            rFirebase.put("userId",u.getId());
+            this.firebaseService.addDocument("users",rFirebase);
             this.firebaseService.addUserToFirstRoom(r.getIdentity());
         } catch (Exception ex) {
             System.out.println("Something went wrong with firebase");
         }
 
         Contract c = userMapper.toContract(user);
-        if(user.getIdContract() != 0){
+        if(user.getIdContract() != null){
             c.setId(user.getIdContract());
         }
         Room room = roomServices.getRoomById(roomId);
@@ -140,7 +141,7 @@ public class UserServiceImpl implements UserService {
         contractRepository.addContract(c);
         Cabinet cabinet = new Cabinet();
         cabinet.setContract(c);
-        cabinet.setCabinetcol("tủ của "+c.getRoom().getNumber());
+        cabinet.setCabinetcol("Tủ của "+c.getRoom().getNumber());
         cabinetRepository.createCabinet(cabinet);
         roomServices.updateRoom(room);
         if(user.getListMember() != null){
@@ -162,13 +163,14 @@ public class UserServiceImpl implements UserService {
                 residentRepository.addResident(i);
 
                 try {
-                    rFirebase.put("username",i.getIdentity());
+                    rFirebase.put("username",u.getUsername());
                     rFirebase.put("name",i.getFullName());
                     rFirebase.put("avatar",i.getAvatar());
-                    this.firebaseService.addUser(rFirebase);
+                    rFirebase.put("userId",u.getId());
+                    this.firebaseService.addDocument("users",rFirebase);
                     this.firebaseService.addUserToFirstRoom(i.getIdentity());
                 } catch (Exception ex) {
-                    System.out.println("Somwthing went wrong with firebase");
+                    System.out.println("Something went wrong with firebase");
                 }
 
                 if(memberInRoomRepository.checkExistence(c,i)){
@@ -183,9 +185,11 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void changePassword(ChangePasswordRequest changePasswordRequest) {
-        var context = SecurityContextHolder.getContext();
-        String username = context.getAuthentication().getName();
-        User user = userRepository.getUserByUsername(username);
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null){
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        User user = userRepository.getUserByUsername(authentication.getName());
         if(!this.passwordEncoder.matches(changePasswordRequest.getOldPassword(), user.getPassword())){
             throw new AppException(ErrorCode.INCORRECT_PASSWORD);
         }
@@ -204,5 +208,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean userExistsByUsername(String username) {
         return this.userRepository.userExistsByUsername(username);
+    }
+
+    @Override
+    public void deleteUser(int id) {
+        this.userRepository.deleteUser(id);
     }
 }

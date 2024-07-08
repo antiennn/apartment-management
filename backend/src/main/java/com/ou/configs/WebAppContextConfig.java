@@ -9,12 +9,17 @@ import com.ou.formatters.CriterionFormatter;
 import com.ou.formatters.FloorFormmatter;
 import com.ou.formatters.LocalDateFormatter;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.format.FormatterRegistry;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.validation.Validator;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.multipart.commons.CommonsMultipartResolver;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.*;
@@ -24,6 +29,7 @@ import org.springframework.web.servlet.i18n.SessionLocaleResolver;
 import java.nio.charset.Charset;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.Executor;
 
 /**
  * @author Admin
@@ -32,6 +38,7 @@ import java.util.TimeZone;
 @EnableWebMvc
 @EnableTransactionManagement
 @EnableCaching
+@EnableAsync
 @ComponentScan(basePackages = {
         "com.ou.controllers",
         "com.ou.mapper",
@@ -77,6 +84,27 @@ public class WebAppContextConfig implements WebMvcConfigurer {
         return slr;
     }
 
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource m = new ResourceBundleMessageSource();
+        m.setBasename("messages");
+
+        return m;
+    }
+
+    @Bean(name = "validator")
+    public LocalValidatorFactoryBean validator() {
+        LocalValidatorFactoryBean bean
+                = new LocalValidatorFactoryBean();
+        bean.setValidationMessageSource(messageSource());
+        return bean;
+    }
+
+    @Override
+    public Validator getValidator() {
+        return validator();
+    }
+
     //    public InternalResourceViewResolver internalResourceViewResolver() {
 //        InternalResourceViewResolver resolver  = new InternalResourceViewResolver();
 //        // Configure the view class to be used as JSTL for rendering views
@@ -88,7 +116,7 @@ public class WebAppContextConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins("http://localhost:3000","https://apartment-management-reactjs.vercel.app","http://frontend")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD")
                 .allowedHeaders("*")
                 .allowCredentials(true);

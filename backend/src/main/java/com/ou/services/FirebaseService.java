@@ -24,15 +24,26 @@ public class FirebaseService {
         return querySnapshot.get().getDocuments();
     }
 
-    public void addUser(Map<String, Object> dataMap) {
+    public void addDocument(String collectionName,Map<String, Object> dataMap) {
         Firestore db = FirestoreClient.getFirestore();
-        DocumentReference docRef = db.collection("users").document(); // Automatically generates a new document ID
+        DocumentReference docRef = db.collection(collectionName).document(); // Automatically generates a new document ID
         String docId = docRef.getId();
 
         dataMap.put("createAt", Timestamp.now());
         dataMap.put("id", docId);
 
         docRef.set(dataMap);
+    }
+
+    public void deleteNotifyDocuments(String collectionName,String fieldName, Object value) throws ExecutionException, InterruptedException {
+        Firestore db = FirestoreClient.getFirestore();
+        Query query = db.collection(collectionName).whereEqualTo(fieldName, value);
+        ApiFuture<QuerySnapshot> querySnapshot = query.get();
+        List<QueryDocumentSnapshot> documents = querySnapshot.get().getDocuments();
+        for (QueryDocumentSnapshot document : documents) {
+            String docId = document.getId();
+            db.collection(collectionName).document(docId).delete();
+        }
     }
 
     public void addUserToFirstRoom(String userId) throws ExecutionException, InterruptedException {
@@ -48,30 +59,10 @@ public class FirebaseService {
         }
     }
 
-    public void updateDocument(String collectionName, String documentId, Map<String, Object> updatedData) throws InterruptedException, ExecutionException {
-        Firestore db = FirestoreClient.getFirestore();
-        DocumentReference docRef = db.collection(collectionName).document(documentId);
-
-        // Update data in Firestore document
-        ApiFuture<WriteResult> result = docRef.update(updatedData);
-        result.get(); // Optional: Wait for the result if needed
-    }
-
     public boolean checkCollectionExist(String collectionName) throws ExecutionException, InterruptedException {
         Firestore db = FirestoreClient.getFirestore();
         CollectionReference collection = db.collection(collectionName);
         ApiFuture<QuerySnapshot> querySnapshot = collection.limit(1).get();
         return !querySnapshot.get().isEmpty();
-    }
-
-    public void initCollection(String collectionName,Map<String, Object> dataMap) throws ExecutionException, InterruptedException {
-        Firestore db = FirestoreClient.getFirestore();
-        DocumentReference docRef = db.collection(collectionName).document();
-        String docId = docRef.getId();
-
-        dataMap.put("createAt", Timestamp.now());
-        dataMap.put("id", docId);
-
-        ApiFuture<WriteResult> result = docRef.set(dataMap);
     }
 }

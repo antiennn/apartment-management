@@ -23,10 +23,11 @@ public class Contract {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "Room_id", nullable = false)
     private Room room;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "Resident_User_id", nullable = false)
     private Resident residentUser;
@@ -47,6 +48,6 @@ public class Contract {
     private LocalDate endedDate;
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "contract")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "contract",fetch = FetchType.EAGER)
     private Set<MemberInRoom> memberInRoom;
 }

@@ -10,15 +10,21 @@ import com.ou.repositories.ResidentRepository;
 import com.ou.services.ReportService;
 import com.ou.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 @Service
+@PropertySource("classpath:application-dev.properties")
 public class ReportServiceImpl implements ReportService {
     @Autowired
     private UserService userService;
@@ -27,15 +33,18 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private ReportRepository reportRepository;
 
+    @Autowired
+    private Environment env;
+
     @Override
-    public Report addReport(Report report) throws IOException, InterruptedException {
-        ApiSentiment text = ApiClient.sendPostRequest("http://127.0.0.1:5000/api/classification_text",String.format("{\"text\":\"%s\"}",report.getContent()));
+    @Async
+    public void addReport(Report report,User u) throws IOException, InterruptedException {
+        ApiSentiment text = ApiClient.sendPostRequest(env.getProperty("report.ai.url"),String.format("{\"text\":\"%s\"}",report.getContent()));
         report.setStatus(text.getResult());
         report.setCreatedDate(LocalDate.now());
-        User u = userService.getUserByUsername(SecurityContextHolder.getContext().getAuthentication().getName());
         Resident r = residentRepository.getResidentById(u.getId());
         report.setResidentUser(r);
-        return reportRepository.addReport(report);
+        reportRepository.addReport(report);
     }
 
     @Override

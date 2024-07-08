@@ -13,13 +13,16 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "receipt")
+@NamedQueries({
+        @NamedQuery(name = "Receipt.findAll", query = "select r from Receipt r")
+})
 public class Receipt {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "Contract_id", nullable = false)
     private Contract contract;
 
@@ -29,27 +32,18 @@ public class Receipt {
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    private String title;
 
     @Column(name = "status")
     private String status = "Chưa thu";
 
-    private BigDecimal price;
+    @OneToMany(mappedBy = "receipt" , cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    private Set<ReceiptDetail> receiptDetails = new LinkedHashSet<>();
 
-    @Column(name = "price", precision = 10, scale = 2)
-    public BigDecimal getPrice() {
-        return price;
-    }
 
-//    private Set<ReceiptDetail> receiptDetails = new LinkedHashSet<>();
-//
-//    @OneToMany(mappedBy = "receipt")
-//    public Set<ReceiptDetail> getReceiptDetails() {
-//        return receiptDetails;
-//    }
+    @Column(name = "price", precision = 13, scale = 2)
+    public BigDecimal price;
+
 
     @Column(name = "title", nullable = false, length = 45)
-    public String getTitle() {
-        return title;
-    }
+    public String title;
 }
